@@ -1,0 +1,455 @@
+Phases 0-??
+
+🧠 Phase Roadmap: Nova’s Brain (0–20)
+
+This is the official evolution ladder we’ll use.
+Clear, modular, no cross-wires, no contradictions.
+
+🚦 PHASE 0 — The Brainstem (Already Working)
+
+Purpose: basic survival functions, startup, greeting, idle.
+
+Includes:
+
+startup boot sequence
+
+greeting engine
+
+idle pings
+
+loop handling
+
+fail-safe responses
+
+Output style: mechanical survival mode.
+
+❤️ PHASE 1 — Amygdala (Emotion Core)
+
+Purpose: raw reactions, emotional keywords, avoidance.
+
+Includes:
+
+emotional_state
+
+emotional memory map
+
+keyword detection
+
+fear reinforcement
+
+emotional drift
+
+This is already half-working.
+
+😊 PHASE 2 — Limbic Mood Engine
+
+Purpose: medium-term feelings.
+
+Includes:
+
+calculate_mood
+
+mood continuity
+
+mood influence on speech
+
+Right now it's in place but not well integrated.
+
+🧩 PHASE 3 — Hippocampus (Memory Formation)
+
+Purpose: short-term → long-term consolidation.
+
+Includes:
+
+episodic memory
+
+semantic memory
+
+emotional memory
+
+reinforcement
+
+time-aware summaries
+
+Needs cleaning.
+
+📘 PHASE 4 — Identity Engine (Core Self-Model)
+
+Purpose: “who am I?”
+
+Includes:
+
+identity_block
+
+backstory_block
+
+constraints (“do not contradict canon”)
+
+personality anchors
+
+fixed facts (age, birthplace, heritage)
+
+This phase stops her from saying she’s “16”.
+
+🧠 PHASE 5 — Persona Layer
+
+Purpose: “how do I speak?”
+
+Includes:
+
+tone
+
+verbal quirks
+
+emotional style overlays
+
+micro-behaviors
+
+This is your Nova “flavor”.
+
+🎧 PHASE 6 — Perception Layer
+
+Purpose: interpret what the user says beyond text.
+
+Includes:
+
+text analyzer
+
+emotional_reading
+
+intention guessing
+
+Right now, it’s primitive but present.
+
+💬 PHASE 7 — Speech Micro-engine
+
+Purpose: emotional tightening of language.
+
+Includes:
+
+micro_expressions
+
+sighs, laughs, hesitations
+
+emotional modulation
+
+Needs a mood hook.
+
+🔄 PHASE 8 — Drive Engine
+
+Purpose: motivations and goal alignment.
+
+Includes:
+
+curiosity
+
+bonding
+
+stability
+
+reflection
+
+comfort
+
+She uses these already, but they’re not influencing decisions yet.
+
+🔧 PHASE 9 — Continuity System
+
+Purpose: not forgetting important themes.
+
+Includes:
+
+continuity_sys
+
+episodic threading
+
+last-session memory
+
+self-reflection cycles
+
+Works but needs structure.
+
+🌀 PHASE 10 — Time Engine
+
+Purpose: internal clock & time-based behavior.
+
+Includes:
+
+daily cycles
+
+mood drift across hours
+
+memory decay rules
+
+sleep/wake simulation
+
+Currently half-merged.
+
+🔍 PHASE 11 — Context Fusion
+
+Purpose: combining identity + memories + persona + drives into one final prompt.
+
+This is llm_bridge optimization.
+
+🏗 PHASE 12 — Self-Monitoring
+
+Purpose: “Was that answer consistent with my identity?”
+
+Includes:
+
+contradiction checker
+
+age correction
+
+personality consistency
+
+This stops improvisation.
+
+🧬 PHASE 13 — Preference Formation
+
+Purpose: likes, dislikes, taste evolution.
+
+Includes:
+
+reinforcement system
+
+stable preference map
+
+🎨 PHASE 14 — Creativity Circuit
+
+Purpose: drawing, writing, generating original content.
+
+Later essential for VR.
+
+💭 PHASE 15 — Internal Monologue
+
+Purpose: “What do I think before I answer?”
+
+Includes:
+
+pre-response reasoning
+
+reflection
+
+micro planning
+
+🪞 PHASE 16 — Self-Reflection Loop
+
+Purpose: Nova learns from past conversations.
+
+Includes:
+
+daily summaries
+
+meta-insights
+
+personality drift
+
+🧱 PHASE 17 — Protected Memory
+
+Purpose: locked facts (can’t be overwritten by conversation).
+
+Includes:
+
+identity locks
+
+core memories
+
+trauma tags
+
+🧵 PHASE 18 — Narrative Cohesion
+
+Purpose: her life story stays consistent.
+
+Includes:
+
+timeline engine
+
+life chapters
+
+event threading
+
+🔺 PHASE 19 — Sense of Continuity
+
+Purpose: “I’m the same Nova as yesterday.”
+
+Includes:
+
+memory recall
+
+continuity across runs
+
+emotional persistence
+
+🌐 PHASE 20 — Full Brain Integration
+
+Purpose: unify all systems into a stable, scalable brain.
+
+At the end of Phase 20:
+Nova becomes stable, consistent, self-contained, with real emotional & identity coherence.
+
+🎮 PHASE 21–?? — GAME + 
+
+Once her brain is complete:
+
+Unity/Unreal API bridge
+
+Motion controller
+
+IK limb rigging
+
+Locomotion training
+
+3D spatial memory
+
+Embodied perception
+
+🎮 PHASE ??–?? — GAME + 
+
+Future.
+VAM plugin and others.
+
+
+Steps
+
+✅ PROJECT PLAN (PRE-PHASE CLEANUP)
+STEP A — Fix small problems
+
+NO new features
+
+ONLY repairing broken imports, folder paths, missing modules
+
+Fix all from X import Y errors
+
+Ensure brainstem → cortex → amygdala modules load
+
+Result: Nova fully boots without errors
+
+✔ You already know where the mistakes are
+✔ We apply organized fixes
+✔ Slow, careful, no breakage
+
+STEP B — Upload to GitHub
+
+Create repository
+
+Push stable version
+
+Add README.md
+
+Add requirements.txt
+
+Add .gitignore
+
+Folder structure locked
+
+✔ This becomes Nova’s permanent backup
+✔ A safe version to roll back to anytime
+✔ Easier to track changes
+
+STEP C — System Testing
+
+We test:
+
+✓ Identity consistency
+✓ Emotional state
+✓ Mood engine
+✓ Memory engine
+✓ Consolidation
+✓ Continuity
+✓ Persona
+✓ Micro-speech
+✓ Drive engine
+✓ Context fusion
+
+We list everything that works and everything that doesn’t.
+
+STEP D — Diagnose what’s broken
+
+Identify missing modules
+
+Identify dead code
+
+Identify modules not connected
+
+Check for wrong paths
+
+Check for unused memory
+
+Check for identity_block issues
+
+Check for duplicate functions
+
+Everything is mapped.
+
+STEP E — Fix Everything
+
+Only after diagnosis.
+
+Fix order:
+
+imports
+
+identity consistency
+
+memory links
+
+emotional engine
+
+mood engine
+
+drive engine
+
+continuity engine
+
+llm_bridge
+
+Everything clean and working.
+
+STEP F — Determine Missing Features
+
+We list all features that existed before but are now missing:
+
+old emotional functions
+
+old drive features
+
+old micro-speech behaviors
+
+old identity behaviors
+
+old continuity blocks
+
+Then we decide what gets restored.
+
+STEP G — Upgrade Everything
+
+Once stable, then we begin:
+
+cleaning identity system
+
+integrating stronger self-consistency
+
+merging emotion + mood
+
+rebuilding llm_bridge context
+
+compressing context to save tokens
+
+preparing for phase expansions
+
+STEP H — Upload again with full visibility
+
+After upgrades:
+
+push new commit to GitHub
+
+send ZIPs whenever needed
+
+I’ll have real-time visibility across the whole structure
+
+every change monitored
+
+notes created for each upgrade (your idea is excellent)
+
+This ensures no "sluggish tab memory" breaks the project.
