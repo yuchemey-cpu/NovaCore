@@ -1,0 +1,59 @@
+# ---------------------------------------
+#   NOVA AI PROJECT - CLEAN GITIGNORE
+# ---------------------------------------
+
+# Python cache & build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# Virtual environment folders
+venv/
+env/
+.venv/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# -------------------------------
+# MEMORY & RUNTIME DATA (IMPORTANT)
+# -------------------------------
+
+# MemoryLibrary runtime JSONs
+nexus/hippocampus/memory/memory_library/*.json
+
+# State Manager runtime files
+nexus/hippocampus/memory/data/
+nexus/hippocampus/memory/short_term/
+nexus/hippocampus/memory/long_term/
+nexus/hippocampus/memory/sessions/
+nexus/hippocampus/memory/timeline/
+
+# Emotional engine runtime states
+nexus/amygdala/emotion/emotional_state.json
+nexus/amygdala/emotion/mood_state.json
+nexus/amygdala/emotion/emotion_cache.json
+
+# Perception logs (if generated)
+nexus/perception/logs/
+
+# Speech artifacts (if any future modules generate audio)
+nexus/speech/audio_output/
+nexus/speech/generated/
+
+# Temporary debug or scratch files
+*.tmp
+*.bak
+*.backup
+
+# ---------------------------------
+# OPTIONAL: Ignore ALL JSON except identity
+# ---------------------------------
+# Uncomment this line if you want to ignore ALL JSON globally:
+# *.json
+
+# Uncomment this if you want to KEEP only Nova’s identity
+# !continuity_sys/identity/nova_identity_data.json

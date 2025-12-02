@@ -106,24 +106,30 @@ class IdentityEngine:
 
         tl = data.get("life_timeline", {})
 
-        return f"""
-Identity Summary:
-You are {name}, born in {birthplace}.
+        import json
+        def _fmt(block):
+            if isinstance(block, dict):
+                return json.dumps(block, indent=2, ensure_ascii=False)
+            return str(block)
 
-Family:
-- Mother: {mother}
-- Father: {father}
+        # No indentation, no cut lines, closed string
+        identity_text = (
+    f"Identity Summary:\n"
+    f"You are {name}, born in {birthplace}.\n\n"
+    f"Family:\n"
+    f"- Mother: {mother}\n"
+    f"- Father: {father}\n\n"
+    f"Early Life:\n"
+    f"- Ages 0–5:\n{_fmt(tl.get('0_5', ''))}\n\n"
+    f"- Ages 6–10:\n{_fmt(tl.get('6_10', ''))}\n\n"
+    f"- Ages 11–13:\n{_fmt(tl.get('11_13', ''))}\n\n"
+    f"- Ages 14–16:\n{_fmt(tl.get('14_16', ''))}\n\n"
+    f"Relationship Model:\n"
+    f"- Stage: {self.state.stage}\n"
+    f"- I-level: {self.state.identity_i}\n"
+    f"- We-level: {self.state.identity_we}\n"
+    f"- Independence: {self.state.independence}\n"
+    f"- Dependence: {self.state.dependence}\n"
+            )
 
-Early Life:
-- Ages 0–5: {tl.get("0_5", "")}
-- Ages 6–10: {tl.get("6_10", "")}
-- Ages 11–13: {tl.get("11_13", "")}
-- Ages 14–16: {tl.get("14_16", "")}
-
-Relationship Model:
-- Stage: {self.state.stage}
-- I-level: {self.state.identity_i}
-- We-level: {self.state.identity_we}
-- Independence: {self.state.independence}
-- Dependence: {self.state.dependence}
-"""
+        return identity_text

@@ -16,8 +16,8 @@ from nexus.hippocampus.memory.memory_library.tools import MemoryLibrary
 
 
 from core.base_module import NovaModule
-from nexus.cortex.thinking.llm_bridge import LlmBridge
-from brainstem.time.time_engine import TimeEngine
+from nexus.speech.llm_bridge import LlmBridge
+from nexus.brainstem.time.time_engine import TimeEngine
 
 from nexus.startup.startup_engine import StartupEngine   # KEEP only if you will use it later
 from nexus.speech.speech_fusion import apply_fusion_and_micro
@@ -29,7 +29,7 @@ from nexus.brainstem.idle.idle_line import generate_idle_ping_line
 
 from nexus.cortex.persona.persona_engine import PersonaEngine
 from continuity_sys.continuity.continuity_engine import ContinuityEngine
-from brainstem.drive.drive_engine import DriveEngine
+from nexus.brainstem.drive.drive_engine import DriveEngine
 from nexus.amygdala.emotion.emotional_state import EmotionalState, create_default_state
 
 emotional_state = load_emotional_state()
