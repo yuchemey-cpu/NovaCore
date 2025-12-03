@@ -15,12 +15,10 @@ from nexus.amygdala.emotion.fusion_engine import FusionEngine
 from nexus.amygdala.emotion.mood_engine import MoodEngine
 from nexus.amygdala.affection.affection_engine import AffectionEngine
 
-
 from nexus.brainstem.needs.needs_engine import NeedsEngine
 from brainstem.drive.drive_engine import DriveEngine
 from nexus.brainstem.daily_cycle.daily_cycle_engine import DailyCycleEngine
-
-
+from nexus.brainstem.idle.idle_engine import IdleLifeEngine
 
 from nexus.cortex.persona.maturity_engine import MaturityInputs
 from nexus.cortex.persona.maturity_engine import MaturityEngine
@@ -28,8 +26,7 @@ from nexus.cortex.persona.persona_engine import PersonaEngine
 from nexus.cortex.thinking.intent_builder import IntentBuilder, IntentContext
 from nexus.cortex.thinking.inner_voice import InnerVoice
 from nexus.cortex.thinking.initiative_engine import InitiativeEngine
-
-
+from nexus.cortex.thinking.intent_builder import MemorySnippet
 
 from continuity_sys.identity.identity_engine import IdentityEngine
 from continuity_sys.continuity.continuity_engine import ContinuityEngine
@@ -91,6 +88,8 @@ class BrainLoop:
         self.memory_library = MemoryLibrary()
         self.memory_consolidation = MemoryConsolidationEngine()
 
+        self.idle_engine.register_user_activity()
+        self.idle_engine = IdleLifeEngine()
 
         self.drive_engine = DriveEngine()
         self.needs_engine = NeedsEngine()
@@ -117,6 +116,25 @@ class BrainLoop:
         Called every time the user speaks.
         Returns Nova's generated reply.
         """
+        
+        # ---------------------------------------------------------
+        # 0. Sleep-cycle check (run BEFORE processing new message)
+        # ---------------------------------------------------------
+        if getattr(self.nova_state, "just_woke_up", False):
+            dream = self.memory_consolidation.run_sleep_cycle(
+                self.memory_engine,
+                self.continuity_engine,
+                self.nova_state,
+                idle_log=getattr(self.nova_state, "idle_activity_log", [])
+            )
+
+            # Clear flag after processing
+            self.nova_state.just_woke_up = False
+
+            # (Optional) Let IntentBuilder or LLMBridge see the dream fragment
+            self.nova_state.last_dream = dream
+
+        
         # 1) Update emotional input from message
         emotional_input = self.emotion_engine.detect_user_emotion(user_message)
         emotional_state = self.emotion_engine.update(emotional_input)
@@ -137,6 +155,20 @@ class BrainLoop:
             if should_sleep:
                 sleep_msg = self.daily_cycle.sleep(self.nova_state)
                 return sleep_msg
+            
+        # ---------------------------------------------------------
+        # 0. Sleep-cycle (run only immediately after she wakes)
+        # ---------------------------------------------------------
+        if getattr(self.nova_state, "just_woke_up", False):
+            dream = self.memory_consolidation.run_sleep_cycle(
+                self.memory_engine,
+                self.continuity_engine,
+                self.nova_state,
+                idle_log=getattr(self.nova_state, "idle_activity_log", [])
+            )
+            self.nova_state.last_dream = dream
+            self.nova_state.just_woke_up = False
+
 
         # 3) Mood update
         mood_state = self.mood_engine.update(emotional_state)
@@ -180,6 +212,42 @@ class BrainLoop:
             recent_memory=recent_memory_snips,
             episodic_memory=episodic_snips,
         )
+
+        # 9.1) Continuity (CCE / DDE / TEE) -> one continuity MemorySnippet if present
+        continuity_snips = []
+        try:
+            cont_text = self.continuity_engine.build_consolidation_block()
+            if cont_text and cont_text.strip():
+                continuity_snips.append(
+                    MemorySnippet(
+                        text=cont_text.strip(),
+                        weight=0.85,
+                        kind="continuity",
+                    )
+                )
+        except Exception:
+            pass
+
+        # 9.2) Episodic memory recall (your MemoryEngine implementation)
+        episodic_snips = []
+        try:
+            episodic_list = getattr(
+                self.memory_engine,
+                "get_relevant_episodic",
+                lambda q, limit=3: []
+            )(user_message, 3)
+
+            for ep in episodic_list:
+                episodic_snips.append(
+                    MemorySnippet(
+                        text=str(ep).strip(),
+                        weight=0.55,
+                        kind="episodic",
+                    )
+                )
+        except Exception:
+            pass
+
 
         # 9.5) Affection engine update
         affection_state = self.affection_engine.update(self.nova_state)

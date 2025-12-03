@@ -18,6 +18,7 @@ from nexus.hippocampus.memory.memory_library.tools import MemoryLibrary
 from core.base_module import NovaModule
 from nexus.speech.llm_bridge import LlmBridge
 from nexus.brainstem.time.time_engine import TimeEngine
+from nexus.brainstem.idle.idle_engine import IdleLifeEngine
 
 from nexus.startup.startup_engine import StartupEngine   # KEEP only if you will use it later
 from nexus.speech.speech_fusion import apply_fusion_and_micro
@@ -219,6 +220,28 @@ async def main_async():
             time_engine.last_user_text = user_text
 
             ear.hear(user_text)
+            
+            # ---------------------------------------------------------
+            # NEW — global user-message dispatch (memory, continuity,
+            # idle engine, sleep cycle, etc.)
+            # ---------------------------------------------------------
+            try:
+                memory.on_user_message(user_text)
+            except:
+                pass
+
+            try:
+                if continuity:
+                    continuity.on_user_message(user_text)
+            except:
+                pass
+
+            # If you add IdleLifeEngine later:
+            # try: idle_engine.register_user_activity() except: pass
+
+            # If you add a SleepCycle (future):
+            # try: sleep_cycle.on_user_message(user_text) except: pass
+
             
             # Autosave MemoryLibrary
             memory_lib.save()

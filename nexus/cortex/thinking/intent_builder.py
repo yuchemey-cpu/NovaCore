@@ -21,6 +21,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 
+# NEW imports for memory/continuity integration
+from continuity_sys.continuity.continuity_engine import ContinuityEngine
+from nexus.hippocampus.memory.memory_engine import MemoryEngine
+
 
 # ---------- helpers ----------
 
@@ -151,6 +155,41 @@ class IntentBuilder:
     Takes internal state and decides *what* she intends to say,
     not the exact words.
     """
+    
+    # ============================================================
+    # NEW — Memory & Continuity Snippet Helpers
+    # ============================================================
+    def _add_continuity_snippet(self, ctx: IntentContext, text: str):
+        """
+        Inject short-term continuity info (CCE/DDE/TEE)
+        as a MemorySnippet(kind='continuity').
+        """
+        if not text or not text.strip():
+            return
+
+        ctx.recent_memory.append(
+            MemorySnippet(
+                text=text.strip(),
+                weight=0.85,            # higher priority than episodic
+                kind="continuity"
+            )
+        )
+
+    def _add_episodic_snippet(self, ctx: IntentContext, text: str):
+        """
+        Inject episodic/semantic memory recall as MemorySnippet(kind='episodic').
+        """
+        if not text or not text.strip():
+            return
+
+        ctx.episodic_memory.append(
+            MemorySnippet(
+                text=text.strip(),
+                weight=0.55,            # medium priority
+                kind="episodic"
+            )
+        )
+
 
     def build_intent(self, ctx: IntentContext) -> Intent:
         # 1) Compute key traits
