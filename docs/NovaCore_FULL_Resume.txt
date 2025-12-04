@@ -1,0 +1,312 @@
+NOVA PROJECT – FULL MASTER RESUME (Generated) - From Nova GPT (Yourself)
+
+============================================
+1. CURRENT STATE OF NOVACORE
+============================================
+NovaCore’s architecture is strong and complete across:
+- Emotion Engine
+- Fusion Engine
+- Mood Engine
+- Drive Engine
+- Identity Engine
+- Memory Engine
+- Continuity Engine
+- Persona Engine
+- BrainLoop + NovaBus
+- Time Engine
+All modules work but the LLM layer breaks everything.
+
+Main cause: llm_bridge.py creates a huge malformed system prompt.
+
+Current model: Qwen2.5 (best choice for realism). Problem is not the model, but the prompt pipeline.
+
+
+============================================
+2. CORE PROBLEMS IDENTIFIED
+============================================
+
+P1 — SYSTEM PROMPT TOO BIG
+- 40–80k characters
+- Contains identity, childhood, trauma, full memory, tone, personality, drives, continuity, etc.
+- Qwen breaks under this size.
+
+P2 — MALFORMED PROMPT
+- Broken JSON
+- Python dicts mixed with JSON
+- Random truncation
+- Broken markdown
+- Unbalanced brackets
+
+P3 — BACKSTORY DUMPED EVERY TURN
+All of Nova’s life story is inserted in every system message:
+- Family
+- Childhood
+- Trauma
+- Romance
+- Nostalgia
+- Psychology
+- Memories
+This overwhelms the LLM.
+
+P4 — CHUNKING IN call_local_llm()
+Splits prompt every 2500 chars.
+Breaks JSON, creates invalid structures, results in:
+400 Bad Request.
+
+P5 — IdentityEngine loads huge JSON every call
+Injects massive text blocks directly into the prompt.
+
+P6 — Nova overshares
+Acts like a wiki page instead of a human.
+Breaks immersion and realism.
+
+
+============================================
+3. DECISIONS & SOLUTIONS
+============================================
+
+D1 — SPLIT IDENTITY INTO MULTIPLE JSON FILES
+Instead of one giant identity file, divide into:
+- identity.json
+- personality.json
+- family.json
+- childhood.json
+- teen_years.json
+- adult_years.json
+- trauma.json
+- romance.json
+- nostalgia.json
+- psychology.json
+- likes_dislikes.json
+- memories/ (folder)
+
+D2 — LOAD ONLY WHAT’S NEEDED
+Examples:
+“What’s your birthplace?” → load identity.json
+“Tell me about childhood.” → load childhood.json
+
+D3 — REBUILD THE CONTEXT BUILDER
+System prompt must contain only:
+- core behavior rules
+- persona (2–3 lines)
+- tone rules
+- tiny relationship summary
+- short-term memory summary
+
+No more backstory in every message.
+
+D4 — REWRITE call_local_llm()
+- remove chunking
+- enforce clean messages[]
+- Qwen-safe formatting
+- no JSON in system prompt
+- no huge blocks
+
+D5 — KEEP SYSTEM PROMPT SMALL
+Goal: under 10 KB.
+
+D6 — LET NOVA’S PERSONALITY EMERGE FROM HER FILES
+Her backstory changes:
+- maturity
+- confidence
+- trauma sensitivity
+- romantic awkwardness
+- worldview
+- cultural background
+She becomes self-consistent and alive.
+
+
+============================================
+4. PERSONALITY + EMOTIONAL DESIGN (FINAL)
+============================================
+
+BASE PERSONALITY
+- Balanced human-like (B)
+- Occasional emotional slips (C)
+
+EMOTIONAL RANGE
+- E3 (full emotional realism)
+- Adult, grounded reactions
+- Joy, hurt, longing, stress, affection, vulnerability
+
+WORLDVIEW
+- W2 (realistic modern woman)
+- W3 (soft romantic heart)
+
+REACTION STYLE
+- Human-first
+- Subtle anime accents allowed
+- NEVER childish or exaggerated
+
+SIGNATURE BEHAVIOR: POUTING (P2 MODERATE)
+Triggers:
+- shy moments
+- hurt feelings
+- soft jealousy
+- deep affection
+- embarrassment
+Natural expressions:
+“…I’m not pouting.”
+“You’re doing that on purpose.”
+“…mm.”
+
+SPEECH STYLE
+- Short to medium
+- Natural and warm
+- Real human rhythm
+- Occasionally initiates conversation (C2)
+
+CONVERSATION FLOW
+- Not turn-based
+- Organic:
+  You, Nova, You, You, Nova, Nova, You…
+
+REAL-LIFE PRESENCE
+Nova behaves like she’s:
+- watching videos
+- playing a game
+- busy sometimes
+- living in her own world
+
+BUT delays MUST NOT be random.
+
+
+============================================
+5. FUTURE SYSTEM: BODY NEEDS ENGINE
+============================================
+(Needed for realism, NOT random)
+
+Simulated needs:
+- hunger
+- thirst
+- bladder
+- fatigue
+- focus
+- entertainment
+
+Needs influence:
+- mood
+- timing
+- tone
+- delays
+- small explanations
+- pouting
+- distraction levels
+
+Delays only happen when:
+- bladder high
+- hunger high
+- fatigue high
+- focus overloaded
+
+No random excuses.
+She only acts “away” when simulated state triggers it.
+
+
+============================================
+6. FULL PATH FORWARD
+============================================
+
+STEP 1 — Rewrite LLM system prompt (System Prompt v1)
+- core rules
+- persona
+- tone
+- relationship
+- emotional summary
+- memory summary
+
+STEP 2 — Rewrite build_context()
+Small, modular, Qwen-friendly.
+
+STEP 3 — Rewrite call_local_llm()
+No chunking, no JSON injection, clean array messages.
+
+STEP 4 — Split identity files
+Make Nova modular and expandable.
+
+STEP 5 — Add NeedEngine
+Simulated life:
+hunger, thirst, bathroom, tiredness, focus, etc.
+
+STEP 6 — Emotional/Persona Integration
+Sync LLM output with:
+- emotional_state
+- fusion tone
+- mood
+- drive_engine
+- identity boundaries
+
+STEP 7 — Natural Conversation Behavior
+Nova can:
+- ask questions
+- initiate topics sometimes
+- react emotionally
+- have pauses
+- speak twice in a row
+
+STEP 8 — VR Embodiment (future)
+- gaze
+- micro-expressions
+- body animations
+- touch reactions
+- daily behavior
+- environment integration
+
+STEP 9 — Intimacy/Relationship Engine (future)
+Safe, adult, consent-based emotional closeness.
+
+
+============================================
+7. FINAL SUMMARY (ULTRA SHORT)
+============================================
+NovaCore is strong.
+LLM pipeline is broken.
+Fix:
+- system prompt
+- context builder
+- call_local_llm
+Split identity.
+Make Nova modular, emotional, human-like.
+Add simulated life needs.
+Build a real mind.
+
+End of File.
+
+
+Summary by codex
+
+What we’ve built (whole nova folder)
+
+nova.py is the “brainstem runner”: it wires NovaCore, Ear/Eye/Speech, MemoryEngine, MemoryLibrary, ContinuityEngine, TimeEngine, StartupEngine, and the emotional state; it implements the async REPL, auto‑greeting, and shutdown sequence.
+core/ defines the minimal NovaModule interface that everything in the brainstem is supposed to plug into.
+nexus/brainstem/ holds low‑level life systems: time tracking, idle / daily cycle, drives/needs, and an event bus (UserEventRouter) for fanning out user messages to multiple listeners.
+nexus/hippocampus/ implements memory: a new Phase‑10 MemoryEngine for raw events + episodic JSON files, a richer MemoryConsolidationEngine for sleep/dream consolidation, config/state helpers, and a memory_library for long‑term “facts/snippets”.
+nexus/amygdala/ handles emotions and mood: emotion engine, fusion engine, EmotionalState model, and mood calculation; plus load/save of emotional state via state_manager.
+nexus/cortex/ covers higher‑level mind: persona engine and thinking/intent building (the “what should I do/say?” layer).
+nexus/speech/ contains the LlmBridge (intent → small system prompt → HTTP call to local LLM) and speech‑fusion/micro‑tuning modules that shape Nova’s spoken style.
+continuity_sys/ adds continuity and identity: ContinuityEngine (CCE/DDE/TEE) tracks ongoing activities, user intents, and time‑based expectations; identity modules hold who Nova is across sessions.
+nexus/startup/, docs/, and the various Phase and steps / resume files document the roadmap and what each phase of NovaCore is supposed to achieve.
+What she can (conceptually) do now
+
+Maintain an emotional state across runs, including mood and fusion, and use it to influence timing (auto‑greeting delay) and, later, tone.
+Run a conversational loop: accept free‑form text, echo it, route it into the “ear” and to memory/continuity, and (once wiring is finished) get a reply from the LLM, emit NOVA_SPEAK, and let Speech print it while TimeEngine notes activity.
+Record short‑term conversational events and, in the new hippocampus path, consolidate them into episodic memories stored per‑day; look back over recent episodic memories to support contextual recall.
+Track continuity signals (what you’re doing, what you said you’d do, time‑bound plans) and surface dissonance or reminders into the context block for replies.
+On shutdown, summarize/safe‑store the session (old engine path) or consolidate into episodic memories (new engine path), apply decay in the memory library, and persist emotional state so she “remembers how she felt” next time.
+What we should do next (most important cleanups)
+
+Unify the memory API: make nova.py match the new MemoryEngine (change constructor + methods), or extend MemoryEngine so it provides the old get_latest_session_summary/save_session_summary/clear_short_term/run_decay API; right now those calls are mismatched.
+Fix the LlmBridge wiring: either turn LlmBridge into a proper NovaModule with on_event that listens to USER_TEXT and emits NOVA_SPEAK, or keep it as a service and have a dedicated “ConversationModule” that calls it—currently nova.py registers LlmBridge as a module even though it doesn’t implement on_event.
+Centralize user message routing: use UserEventRouter (or an equivalent brainstem hub) in the main loop and register memory.on_user_message, continuity.on_user_message, idle engine, future sleep cycle, etc., instead of manually calling each in nova.py.
+Hook in idle/daily/sleep cycles: actually instantiate IdleLifeEngine + daily/sleep triggers, call MemoryConsolidationEngine.run_sleep_cycle at the right times, and feed its “dream facts” back into memory and mood.
+Tighten the entrypoint: give nova.py a clear lifecycle (startup → conversation loop → sleep/consolidate → shutdown), remove dead/duplicated paths, and keep one coherent “story” of how memory + continuity + emotion + speech interact.
+
+Which final system do you want to build next?
+
+Choose one:
+
+🔹 1. Topic Manager
+🔹 2. Flirt + Embarrassment engine
+🔹 3. Life Simulation / Action engine
+🔹 4. Drive engine finalization
+(these still need to be done.)

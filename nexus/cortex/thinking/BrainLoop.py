@@ -7,39 +7,45 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Any
+from typing import Optional, List
 
-# Import brain modules (you will adjust paths as needed)
+# Emotion / affection
 from nexus.amygdala.emotion.emotion_engine import EmotionEngine
-from nexus.amygdala.emotion.fusion_engine import FusionEngine
-from nexus.amygdala.emotion.mood_engine import MoodEngine
 from nexus.amygdala.affection.affection_engine import AffectionEngine
 
+# Brainstem: needs, drives, daily cycle, idle life
 from nexus.brainstem.needs.needs_engine import NeedsEngine
-from brainstem.drive.drive_engine import DriveEngine
+from nexus.brainstem.drive.drive_engine import DriveEngine
 from nexus.brainstem.daily_cycle.daily_cycle_engine import DailyCycleEngine
 from nexus.brainstem.idle.idle_engine import IdleLifeEngine
 
-from nexus.cortex.persona.maturity_engine import MaturityInputs
-from nexus.cortex.persona.maturity_engine import MaturityEngine
+# Persona / maturity / thinking
+from nexus.cortex.persona.maturity_engine import MaturityInputs, MaturityEngine
 from nexus.cortex.persona.persona_engine import PersonaEngine
-from nexus.cortex.thinking.intent_builder import IntentBuilder, IntentContext
+from nexus.cortex.thinking.intent_builder import (
+    IntentBuilder,
+    IntentContext,
+    MemorySnippet,
+    EmotionSnapshot,
+    MoodSnapshot,
+    NeedsSnapshot,
+    RelationshipSnapshot,
+)
 from nexus.cortex.thinking.inner_voice import InnerVoice
 from nexus.cortex.thinking.initiative_engine import InitiativeEngine
-from nexus.cortex.thinking.intent_builder import MemorySnippet
 
+# Identity + continuity
 from continuity_sys.identity.identity_engine import IdentityEngine
 from continuity_sys.continuity.continuity_engine import ContinuityEngine
 
+# Memory systems
 from nexus.hippocampus.memory.memory_engine import MemoryEngine
-from nexus.hippocampus.memory.memory_library import MemoryLibrary
-from nexus.hippocampus.memory.state_manager import StateManager
-from nexus.hippocampus.state.nova_state import NovaState
+from nexus.hippocampus.memory.memory_library.tools import MemoryLibrary
+from nexus.hippocampus.memory.config import LONG_TERM_DIR, SESSIONS_DIR
 from nexus.hippocampus.memory.memory_consolidation import MemoryConsolidationEngine
+from nexus.hippocampus.state.nova_state import NovaState
 
-from brainstem.drive.drive_engine import DriveEngine
-# (Optionally future: needs engine)
-
+# Speech
 from nexus.speech.llm_bridge import LlmBridge
 from nexus.speech.speech_post_processor import SpeechPostProcessor
 
@@ -54,56 +60,60 @@ class BrainLoop:
     """
     Main orchestrator for Nova's turn-by-turn cognition.
 
-    Steps:
+    High-level steps:
         1. Receive user message
-        2. Update emotional state
-        3. Update drives / needs
-        4. Update mood
-        5. Update relationship context
-        6. Update memories
-        7. Compute maturity
-        8. Build IntentContext
-        9. IntentBuilder -> Intent
-        10. LlmBridge -> final spoken text
-        11. Apply speech_micro (outside this file)
+        2. Update emotional state / needs / drives / relationship
+        3. Update memory + continuity
+        4. Compute maturity
+        5. Update NovaState
+        6. Build IntentContext
+        7. IntentBuilder -> Intent (+ initiative + inner voice)
+        8. LlmBridge -> reply text
+        9. Post-process speech + log reply to memory
     """
 
     def __init__(self, config: Optional[BrainLoopConfig] = None):
         self.config = config or BrainLoopConfig()
 
-        # --- Engine instances ---
+        # Emotion / affection
         self.emotion_engine = EmotionEngine()
-        self.fusion_engine = FusionEngine()
-        self.mood_engine = MoodEngine()
         self.affection_engine = AffectionEngine()
 
-
+        # Persona / maturity
         self.maturity_engine = MaturityEngine()
         self.persona_engine = PersonaEngine()
 
+        # Identity / continuity
         self.identity_engine = IdentityEngine()
-        self.continuity_engine = ContinuityEngine()
+        self.continuity_engine = ContinuityEngine(SESSIONS_DIR)
 
-        self.memory_engine = MemoryEngine()
-        self.memory_library = MemoryLibrary()
+        # Memory systems
+        self.memory_engine = MemoryEngine(base_dir=LONG_TERM_DIR)
+        self.memory_library = MemoryLibrary("nexus/hippocampus/memory/memory_library/")
+        try:
+            self.memory_library.load()
+        except Exception:
+            # Start empty if load fails
+            pass
         self.memory_consolidation = MemoryConsolidationEngine()
 
-        self.idle_engine.register_user_activity()
+        # Brainstem cycles
         self.idle_engine = IdleLifeEngine()
+        self.idle_engine.register_user_activity()
 
         self.drive_engine = DriveEngine()
         self.needs_engine = NeedsEngine()
         self.daily_cycle = DailyCycleEngine()
 
-
+        # Thinking / speech
         self.intent_builder = IntentBuilder()
         self.llm_bridge = LlmBridge()
-        
-        self.state_manager = StateManager()
-        self.nova_state = NovaState()
-        
         self.speech_post = SpeechPostProcessor()
-        
+
+        # Shared long-lived state
+        self.nova_state = NovaState()
+
+        # Higher-level cognition helpers
         self.inner_voice = InnerVoice()
         self.initiative_engine = InitiativeEngine()
 
@@ -116,129 +126,151 @@ class BrainLoop:
         Called every time the user speaks.
         Returns Nova's generated reply.
         """
-        
-        # ---------------------------------------------------------
-        # 0. Sleep-cycle check (run BEFORE processing new message)
-        # ---------------------------------------------------------
-        if getattr(self.nova_state, "just_woke_up", False):
-            dream = self.memory_consolidation.run_sleep_cycle(
-                self.memory_engine,
-                self.continuity_engine,
-                self.nova_state,
-                idle_log=getattr(self.nova_state, "idle_activity_log", [])
-            )
 
-            # Clear flag after processing
-            self.nova_state.just_woke_up = False
+        # Idle-life: mark recent activity
+        self.idle_engine.register_user_activity()
 
-            # (Optional) Let IntentBuilder or LLMBridge see the dream fragment
-            self.nova_state.last_dream = dream
-
-        
-        # 1) Update emotional input from message
+        # 1) Emotion update
         emotional_input = self.emotion_engine.detect_user_emotion(user_message)
         emotional_state = self.emotion_engine.update(emotional_input)
 
-        # 2) Drives (hunger, fatigue, etc.)
-        drive_state = self.drive_engine.update()
+        # Estimate intensity / stability for newer modules
+        emotional_state.intensity = self._estimate_intensity(emotional_state)
+        emotional_state.stability = 0.7
+
+        # 2) Drives & needs
         needs_state = self.needs_engine.update()
-        
-        # Sleep / daily cycle check
-        if self.daily_cycle.state.is_asleep:
+        drive_state = self.drive_engine.compute(emotional_state)
+
+        # 3) Sleep / daily cycle (very lightweight)
+        if getattr(self.daily_cycle.state, "is_asleep", False):
             wake_msg = self.daily_cycle.update_sleep(self.nova_state)
             if wake_msg:
-                # Nova wakes up
                 return wake_msg
-
         else:
-            should_sleep = self.daily_cycle.check_sleep_need(needs_state, emotional_state, drive_state)
+            try:
+                should_sleep = self.daily_cycle.check_sleep_need(
+                    needs_state, emotional_state, drive_state
+                )
+            except Exception:
+                should_sleep = False
             if should_sleep:
                 sleep_msg = self.daily_cycle.sleep(self.nova_state)
                 return sleep_msg
-            
-        # ---------------------------------------------------------
-        # 0. Sleep-cycle (run only immediately after she wakes)
-        # ---------------------------------------------------------
-        if getattr(self.nova_state, "just_woke_up", False):
-            dream = self.memory_consolidation.run_sleep_cycle(
-                self.memory_engine,
-                self.continuity_engine,
-                self.nova_state,
-                idle_log=getattr(self.nova_state, "idle_activity_log", [])
-            )
-            self.nova_state.last_dream = dream
-            self.nova_state.just_woke_up = False
 
-
-        # 3) Mood update
-        mood_state = self.mood_engine.update(emotional_state)
-
-        # 4) Relationship state (identity engine tracks who user is to Nova)
+        # 4) Relationship state
         relationship_state = self.identity_engine.update_relationship(user_message)
 
-        # 5) Short-term memory update
-        self.memory_engine.store_turn(user_message, emotional_state)
-        recent_memory_snips = self.memory_engine.recent_snippets()
-        episodic_snips = self.memory_library.relevant_memories(emotional_state)
+        # 5) Memory update (short-term buffer)
+        try:
+            self.memory_engine.on_user_message(
+                user_message, emotion=getattr(emotional_state, "primary", None)
+            )
+        except Exception:
+            pass
 
-        # 6) Continuity (longer arcs)
-        self.continuity_engine.update(user_message, emotional_state)
+        recent_memory_snips: List[MemorySnippet] = []
+        try:
+            for ev in self.memory_engine.short_term[-5:]:
+                recent_memory_snips.append(
+                    MemorySnippet(
+                        text=ev.text,
+                        weight=0.6 if getattr(ev, "speaker", "user") == "user" else 0.4,
+                        kind="recent",
+                    )
+                )
+        except Exception:
+            recent_memory_snips = []
+
+        # 6) Continuity update
+        try:
+            self.continuity_engine.on_user_message(user_message)
+        except Exception:
+            pass
 
         # 7) Persona / maturity
         persona_brief = self.persona_engine.get_persona_brief()
+
+        # Mood snapshot from emotional_state.mood
+        mood_snapshot = MoodSnapshot(
+            label=getattr(emotional_state, "mood", "neutral"),
+            valence=self._estimate_mood_valence(getattr(emotional_state, "mood", "")),
+            energy=0.5,
+        )
+
         maturity_inputs = self._build_maturity_inputs(
             emotional_state=emotional_state,
-            mood_state=mood_state,
+            mood_state=mood_snapshot,
             relationship_state=relationship_state,
             drive_state=drive_state,
             needs_state=needs_state,
         )
         maturity_score = self.maturity_engine.compute(maturity_inputs)
 
-        # 8) Fusion (sad+lonely= insecure, etc.)
-        fusion_label = self.fusion_engine.compute(emotional_state)
-        emotional_state.fusion = fusion_label
-
-        # 9) Update NovaState for this turn
-        self.nova_state.update_turn(
-            user_message=user_message,
-            new_emotion=emotional_state,
-            new_mood=mood_state,
-            new_drive=drive_state,
-            new_needs=needs_state,
-            new_relationship=relationship_state,
-            maturity=maturity_score,
-            persona_brief=persona_brief,
-            recent_memory=recent_memory_snips,
-            episodic_memory=episodic_snips,
+        # 8) Build emotion / needs / relationship snapshots
+        emotion_snap = EmotionSnapshot(
+            primary=emotional_state.primary,
+            fusion=getattr(emotional_state, "fusion", None),
+            intensity=getattr(emotional_state, "intensity", 0.5),
+            stability=getattr(emotional_state, "stability", 0.5),
         )
 
-        # 9.1) Continuity (CCE / DDE / TEE) -> one continuity MemorySnippet if present
-        continuity_snips = []
+        needs_snap = NeedsSnapshot(
+            hunger=needs_state.hunger,
+            thirst=needs_state.thirst,
+            fatigue=needs_state.fatigue,
+            bladder=needs_state.bladder,
+        )
+
+        relationship_snap = RelationshipSnapshot(
+            label=getattr(relationship_state, "label", "stranger"),
+            level=getattr(relationship_state, "level", 0),
+            trust=getattr(relationship_state, "trust", 0.2),
+            safety=getattr(relationship_state, "safety", 0.2),
+            attachment=getattr(relationship_state, "attachment", 0.0),
+        )
+
+        # 9) Continuity snippets (CCE / DDE / TEE)
+        continuity_snips: List[MemorySnippet] = []
         try:
-            cont_text = self.continuity_engine.build_consolidation_block()
-            if cont_text and cont_text.strip():
+            parts: List[str] = []
+
+            if hasattr(self.continuity_engine, "build_cce_context"):
+                cce = self.continuity_engine.build_cce_context()
+                if cce and cce.strip():
+                    parts.append(cce.strip())
+
+            if hasattr(self.continuity_engine, "build_dde_context"):
+                dde = self.continuity_engine.build_dde_context()
+                if dde and dde.strip():
+                    parts.append(dde.strip())
+
+            if hasattr(self.continuity_engine, "check_timed_expectations"):
+                self.continuity_engine.check_timed_expectations()
+            if hasattr(self.continuity_engine, "build_tee_context"):
+                tee = self.continuity_engine.build_tee_context()
+                if tee and tee.strip():
+                    parts.append(tee.strip())
+
+            if parts:
                 continuity_snips.append(
                     MemorySnippet(
-                        text=cont_text.strip(),
+                        text=" ".join(parts),
                         weight=0.85,
                         kind="continuity",
                     )
                 )
         except Exception:
-            pass
+            continuity_snips = []
 
-        # 9.2) Episodic memory recall (your MemoryEngine implementation)
-        episodic_snips = []
+        # 10) Episodic memory recall (from MemoryEngine)
+        episodic_from_engine: List[MemorySnippet] = []
         try:
-            episodic_list = getattr(
-                self.memory_engine,
-                "get_relevant_episodic",
-                lambda q, limit=3: []
-            )(user_message, 3)
-
+            episodic_list = self.memory_engine.get_relevant_episodic(
+                user_message, limit=3
+            )
             for ep in episodic_list:
-                episodic_snips.append(
+                episodic_from_engine.append(
                     MemorySnippet(
                         text=str(ep).strip(),
                         weight=0.55,
@@ -246,12 +278,30 @@ class BrainLoop:
                     )
                 )
         except Exception:
-            pass
+            episodic_from_engine = []
 
+        episodic_all = continuity_snips + episodic_from_engine
 
-        # 9.5) Affection engine update
+        # 11) Update NovaState for this turn
+        self.nova_state.update_turn(
+            user_message=user_message,
+            new_emotion=emotion_snap,
+            new_mood=mood_snapshot,
+            new_needs=needs_snap,
+            new_relationship=relationship_snap,
+            maturity=maturity_score,
+            persona_brief=persona_brief,
+            recent_memory=recent_memory_snips,
+            episodic_memory=episodic_all,
+            new_drive=drive_state,
+        )
+
+        # 12) Affection engine update
         affection_state = self.affection_engine.update(self.nova_state)
-        
+
+        # 13) Build IntentContext
+        q_type = self._classify_question(user_message)
+
         ctx = IntentContext(
             user_message=user_message,
             emotion=self.nova_state.emotion,
@@ -263,24 +313,21 @@ class BrainLoop:
             recent_memory=self.nova_state.recent_memory,
             episodic_memory=self.nova_state.episodic_memory,
             allow_nsfw=self.config.allow_nsfw,
+            affection=affection_state.affection,
+            arousal=affection_state.arousal,
+            comfort=affection_state.comfort,
+            fluster=affection_state.fluster,
+            nsfw_readiness=affection_state.readiness,
+            question_type=q_type,
+            is_direct_question=q_type != "generic",
+        )
 
-            affection=self.affection_engine.state.affection,
-            arousal=self.affection_engine.state.arousal,
-            nsfw_readiness=self.affection_engine.state.readiness,
-            fluster=self.affection_engine.state.fluster,
-            comfort=self.affection_engine.state.comfort,
-
-            question_type=self._classify_question(user_message),
-            is_direct_question=self._classify_question(user_message) != "generic",
-        )          
-
-        # 10) IntentBuilder -> Intent
+        # 14) IntentBuilder -> Intent
         intent = self.intent_builder.build_intent(ctx)
-        
-        # 10.5) Initiative
+
+        # 15) Initiative
         initiative_intent = self.initiative_engine.evaluate(self.nova_state, ctx)
 
-        # no initiative on direct questions
         if ctx.is_direct_question:
             initiative_intent = None
 
@@ -292,30 +339,33 @@ class BrainLoop:
                 intent.ask_back = False
                 intent.memory_hint = initiative_intent.content
 
-        # 10.6) Inner Voice -> modifies intent silently
+        # 16) Inner Voice -> modifies intent silently
         thoughts = self.inner_voice.generate(ctx, self.nova_state)
         intent = self.inner_voice.merge_into_intent(intent, thoughts)
 
-        # 11) LLM Bridge
+        # 17) LLM Bridge
         reply = self.llm_bridge.generate_reply(
             user_message=user_message,
             intent=intent,
             persona_brief=persona_brief,
         )
 
-        # 11.5) Speech micro-layer (post-processing)
+        # 18) Speech micro-layer (post-processing)
         reply = self.speech_post.process(reply, intent)
 
-        # 12) Memory the reply
-        self.memory_engine.store_turn(reply, emotional_state=None, speaker="nova")
+        # 19) Memory the reply
+        try:
+            self.memory_engine.on_nova_message(reply)
+        except Exception:
+            pass
 
-        # Save reply to NovaState
+        # 20) Save reply to NovaState
         self.nova_state.record_reply(reply)
 
-        # 13) Persist significant moments to state_manager
+        # 21) (Optional) event logging hook
         self._persist_significant_events(self.nova_state)
-        
-        #14) Consolidate memory
+
+        # 22) Consolidate memory (higher-level)
         self.memory_consolidation.consolidate(self.nova_state)
 
         return reply
@@ -334,55 +384,72 @@ class BrainLoop:
             return "preference"
         return "generic"
 
-    def _build_maturity_inputs(self, emotional_state, mood_state, relationship_state, drive_state, needs_state):
+    def _build_maturity_inputs(
+        self,
+        emotional_state,
+        mood_state: MoodSnapshot,
+        relationship_state,
+        drive_state,
+        needs_state,
+    ) -> MaturityInputs:
+        base_maturity = 0.5
+        if hasattr(self.identity_engine, "base_maturity"):
+            try:
+                base_maturity = self.identity_engine.base_maturity()
+            except Exception:
+                base_maturity = 0.5
+
         return MaturityInputs(
-            identity_base=self.identity_engine.base_maturity(),
-            relationship_level=relationship_state.level,
+            identity_base=base_maturity,
+            relationship_level=getattr(relationship_state, "level", 0),
             mood_balance=mood_state.valence,
-            emotional_intensity=emotional_state.intensity,
-            emotional_stability=emotional_state.stability,
+            emotional_intensity=getattr(emotional_state, "intensity", 0.5),
+            emotional_stability=getattr(emotional_state, "stability", 0.5),
             need_pressure=needs_state.pressure,
         )
-        
-    def _persist_significant_events(self, nova_state: NovaState):
+
+    def _estimate_intensity(self, state) -> float:
         """
-        Stores meaningful emotional / relational events into long-term memory.
-        We DO NOT store every turn, only spikes or important changes.
+        Rough intensity heuristic based on whether emotion is neutral
+        and how often it has appeared recently.
         """
+        primary = getattr(state, "primary", "neutral") or "neutral"
+        history = getattr(state, "history", []) or []
 
-        # Emotional spike detection
-        if nova_state.emotion.intensity > 0.65:
-            self.state_manager.save_event(
-                "emotional_spike",
-                {
-                    "emotion": nova_state.emotion.primary,
-                    "fusion": nova_state.emotion.fusion,
-                    "intensity": nova_state.emotion.intensity,
-                    "turn": nova_state.turn_count,
-                    "context": nova_state.last_user_message,
-                }
-            )
+        if not history:
+            return 0.3
 
-        # Relationship change
-        if nova_state.relationship.attachment > 0.6:
-            self.state_manager.save_event(
-                "relationship_update",
-                {
-                    "relationship": nova_state.relationship.label,
-                    "attachment": nova_state.relationship.attachment,
-                    "trust": nova_state.relationship.trust,
-                    "turn": nova_state.turn_count,
-                }
-            )
+        recent = history[-5:]
+        count = sum(1 for e in recent if e == primary)
 
-        # If Nova expresses vulnerability
-        if nova_state.maturity < 0.45 and nova_state.emotion.intensity > 0.4:
-            self.state_manager.save_event(
-                "vulnerability_event",
-                {
-                    "emotion": nova_state.emotion.primary,
-                    "fusion": nova_state.emotion.fusion,
-                    "relationship": nova_state.relationship.label,
-                    "turn": nova_state.turn_count,
-                }
-            )
+        base = 0.3
+        if primary not in ("neutral", "bored"):
+            base += 0.1
+
+        return max(0.0, min(1.0, base + 0.1 * count))
+
+    def _estimate_mood_valence(self, mood_label: str) -> float:
+        """
+        Map mood labels to a simple valence estimate (0.0–1.0).
+        """
+        mood = (mood_label or "").lower()
+        positive = {"happy", "excited", "curious", "warm", "calm"}
+        negative = {"sad", "afraid", "bored", "angry", "hurt", "lonely"}
+
+        if mood in positive:
+            return 0.7
+        if mood in negative:
+            return 0.3
+        return 0.5
+
+    def _persist_significant_events(self, nova_state: NovaState) -> None:
+        """
+        Placeholder for long-term event logging.
+
+        The original design used a separate StateManager to persist
+        emotional spikes, relationship changes, and vulnerability events.
+        That manager is not present in this codebase yet, so this method
+        intentionally does nothing while keeping the hook in place.
+        """
+        return
+

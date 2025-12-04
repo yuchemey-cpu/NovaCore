@@ -76,3 +76,8 @@ class NeedsEngine:
     def toilet(self): self.bladder = max(0.0, self.bladder - 0.9)
     def receive_affection(self, amount: float = 0.4):
         self.affection = max(0.0, self.affection - amount)
+        
+    def register_activity(self):
+        # user activity reduces fatigue slightly
+        self.fatigue = max(0.0, self.fatigue - 0.01)
+

@@ -1,0 +1,13 @@
+NovaCore Project – Master Resume (from new 1.txt)
+1. Current State of NovaCore
+- Architecture strong
+2. Problems
+- System prompt too big
+- Malformed prompt
+3. Decisions
+- Split identity JSON
+- New context builder
+4. Personality & Behavior
+- Balanced emotional realism
+5. Next Systems
+- Bodily needs engine

@@ -18,6 +18,7 @@ import random
 from typing import Any, Dict
 
 from nexus.amygdala.emotion.emotional_state import EmotionalState
+from nexus.amygdala.emotion import fusion_engine
 import nexus.amygdala.emotion.emotion_memory_map as emotion_memory_map
 from nexus.amygdala.emotion.mood_engine import calculate_mood
 
@@ -154,7 +155,7 @@ def update_emotional_state(
     try:
         # For now we don't pass explicit spikes; those can be added later
         # (e.g. jealousy, embarrassment) by higher-level systems.
-        from emotion import fusion_engine
+        
         fusion_engine.update_fusion(state, spikes=None)
     except Exception:
         # Fail-safe: fusion is purely cosmetic; never break core logic.
@@ -162,6 +163,16 @@ def update_emotional_state(
 
     return state
 
+class EmotionEngine:
+    def __init__(self, state=None):
+        self.state = state or EmotionalState()
+
+    def detect_user_emotion(self, text):
+        return update_emotional_state(self.state, text)
+
+    def update(self, emotional_input):
+        self.state = emotional_input
+        return self.state
 
 
 # -----------------------------------------------------------------------------------
